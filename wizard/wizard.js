@@ -1,75 +1,135 @@
-//set main namespace
-goog.provide('wizard');
+(function() {
+    
+    goog.provide('wvsz.Wizard');
 
+    goog.require('lime');
+    goog.require('lime.animation.KeyframeAnimation');
+    goog.require('lime.animation.MoveBy');
+    goog.require("lime.ASSETS.wizard.plist");
+    goog.require('lime.Sprite');
+    goog.require('lime.SpriteSheet');
+    goog.require('goog.math.Coordinate');
 
-//get requirements
-goog.require('lime.Director');
-goog.require('lime.Scene');
-goog.require('lime.Layer');
-goog.require('lime.Circle');
-goog.require('lime.Label');
-goog.require('lime.animation.Spawn');
-goog.require('lime.animation.FadeTo');
-goog.require('lime.animation.ScaleTo');
-goog.require('lime.animation.MoveTo');
-goog.require('wizard.Level');
+    var CONST = {
+        ACTION_MOVE: "move",
+        ACTION_SHOOT: "shoot",
+        ACTION_SHOOTING: "shooting",
+        ACTION_STAND: "stand"
+    };
 
-// entrypoint
-wizard.start = function(){
+    wvsz.Wizard = function(game) {
+        lime.Sprite.call(this);
 
-	var director = new lime.Director(document.body,1024,768),
-	    scene = new lime.Scene(),
+        this.game = game;
+        this.spriteSheet = new lime.SpriteSheet('assets/wizard.png',lime.ASSETS.wizard.plist);
+        this.status = CONST.ACTION_STAND;
+        this.viewDistance = 120;
+        this.maxDelayFrame = 120;
+        this.currentDelayTime = 0;
 
-	    target = new lime.Layer().setPosition(512,384),
-        circle = new lime.Circle().setSize(150,150).setFill(255,150,0),
-        lbl = new lime.Label().setSize(160,50).setFontSize(30).setText('TOUCH ME!'),
-        title = new lime.Label().setSize(800,70).setFontSize(60).setText('Now move me around!')
-            .setOpacity(0).setPosition(512,80).setFontColor('#999').setFill(200,100,0,.1);
+        this.setSize(32,32)
 
+            // set current sprite
+            .setFill(this.spriteSheet.getFrame('wizard01.png'));
+    }
+    goog.inherits(wvsz.Wizard, lime.Sprite);
 
-    //add circle and label to target object
-    target.appendChild(circle);
-    target.appendChild(lbl);
+    wvsz.Wizard.prototype.moteToPosition = function (pos) {
 
-    //add target and title to the scene
-    scene.appendChild(target);
-    scene.appendChild(title);
+        this.changeStatus(CONST.ACTION_MOVE);
 
-	director.makeMobileWebAppCapable();
+        var delta = goog.math.Coordinate.difference(pos,this.getPosition()),
+            angle = Math.atan2(-delta.y,delta.x),
+            degAngle = angle * 180 / Math.PI,
+            move = new lime.animation.MoveBy(delta).setEasing(lime.animation.Easing.LINEAR).setSpeed(1),
+            anim = new lime.animation.KeyframeAnimation(),
+            self = this;
 
-    //add some interaction
-    goog.events.listen(target,['mousedown','touchstart'],function(e){
+        console.log("Wizard: Start moving with angle " + degAngle);
 
-        //animate
-        target.runAction(new lime.animation.Spawn(
-            new lime.animation.FadeTo(.5).setDuration(.2),
-            new lime.animation.ScaleTo(1.5).setDuration(.8)
-        ));
+        // Rotate object to right direction
+        this.setRotation(degAngle);
 
-        title.runAction(new lime.animation.FadeTo(1));
+        // Move sprite
+        this.runAction(move);
 
-        //let target follow the mouse/finger
-        e.startDrag();
+        // Change sprite
+        anim.delay = 1 / 6;
+        for(var i = 1 ; i <= 2 ;i++){
+           anim.addFrame(this.spriteSheet.getFrame('wizard' + '0' + i + '.png'));
+        }
+        this.runAction(anim);
 
-        //listen for end event
-        e.swallow(['mouseup','touchend'],function(){
-            target.runAction(new lime.animation.Spawn(
-                new lime.animation.FadeTo(1),
-                new lime.animation.ScaleTo(1),
-                new lime.animation.MoveTo(512,384)
-            ));
+         // on stop show front facing
+        goog.events.listen(move, lime.animation.Event.STOP,function(){
+            anim.stop();
+            self.changeStatus(CONST.ACTION_STAND);
+        })
+    }
 
-            title.runAction(new lime.animation.FadeTo(0));
-        });
+    wvsz.Wizard.prototype.lockTarget = function (enemy) {
+        this.enemy = enemy;
+        this.changeStatus(CONST.ACTION_SHOOT);
+    }
 
+    wvsz.Wizard.prototype.unlockTarget = function () {
+        this.enemy = null;
+        this.changeStatus(CONST.ACTION_STAND);
+    }
 
-    });
+    wvsz.Wizard.prototype.step = function (dt) {
+        if (this.status === CONST.ACTION_SHOOT && this.enemy) {
+            var delta = goog.math.Coordinate.difference(this.enemy.getPosition(),this.getPosition()),
+                angle = Math.atan2(-delta.y,delta.x),
+                degAngle = angle * 180 / Math.PI,
+                self = this;
 
-	// set current scene active
-	director.replaceScene(scene);
+            // Rotate object to right direction
+            this.setRotation(degAngle);
 
-}
+            console.log("Shoot");
 
+            this.status = CONST.ACTION_SHOOTING;
+            lime.scheduleManager.callAfter(function (dt) {
+                this.status = CONST.ACTION_SHOOT;
+            }, this, 500);
+        }
+    }
 
-//this is required for outside access after code is compiled in ADVANCED_COMPILATIONS mode
-goog.exportSymbol('wizard.start', wizard.start);
+    wvsz.Wizard.prototype.changeStatus = function (status) {
+        this.status = status;
+    }
+
+    wvsz.Wizard.prototype.isTarget = function (enemy) {
+        var pos = this.getPosition(),
+            size = this.getSize(),
+            enemyPos = enemy.getPosition(),
+            enemySize = enemy.getSize(),
+            centerOfWizard = new goog.math.Coordinate(pos.x + size.width, pos.y + size.height),
+            centerOfEnemy = new goog.math.Coordinate(enemyPos.x + enemySize.width, enemyPos.y + enemySize.height);
+
+        return (this.viewDistance + enemy.getSize().width / 2) > Math.abs(goog.math.Coordinate.distance(centerOfWizard, centerOfEnemy));
+    }
+
+    wvsz.Wizard.prototype.isLocking = function () {
+        return this.enemy != null;
+    }
+
+    wvsz.Wizard.prototype.getTop = function () {
+        return this.getPosition().y;
+    }
+
+    wvsz.Wizard.prototype.getBottom = function () {
+        return this.getPosition().y + this.getSize().height;
+    }
+
+    wvsz.Wizard.prototype.getLeft = function () {
+        return this.getPosition().x;
+    }
+
+    wvsz.Wizard.prototype.getRight = function () {
+        return this.getPosition().x + this.getSize().width;
+    }
+
+    
+})();
