@@ -5,6 +5,7 @@
     goog.require("lime.ASSETS.zombie.plist");
     goog.require('lime.Sprite');
     goog.require('lime.SpriteSheet');
+    goog.require('lime.animation.KeyframeAnimation');
 
     wvsz.Zombie = function(game) {
         lime.Sprite.call(this);
@@ -19,21 +20,26 @@
     wvsz.Zombie.prototype.step = function (dt) {
         
     }
-
-    wvsz.Zombie.prototype.getTop = function () {
-        return this.getPosition().y;
-    }
-
-    wvsz.Zombie.prototype.getBottom = function () {
-        return this.getPosition().y + this.getSize().height;
-    }
-
-    wvsz.Zombie.prototype.getLeft = function () {
-        return this.getPosition().x;
-    }
-
-    wvsz.Zombie.prototype.getRight = function () {
-        return this.getPosition().x + this.getSize().width;
+    
+    wvsz.Zombie.prototype.wasShot = function (magic) {
+        var anim = new lime.animation.KeyframeAnimation(),
+        	self = this,
+        	game = this.game;
+        
+        // Change sprite
+        anim.setDelay(1 / 6)
+        	.setLooping(false);
+        	
+        for(var i = 3; i <= 6; i++){
+           anim.addFrame(this.spriteSheet.getFrame('zombie' + '0' + i + '.png'));
+        }
+        this.runAction(anim);
+        
+        // on stop show front facing
+        goog.events.listen(anim, lime.animation.Event.STOP,function(){
+            game.wizard.unlockTarget();
+            game.killZombie(self);
+        });
     }
 
 })();

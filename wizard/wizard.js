@@ -9,6 +9,7 @@
     goog.require('lime.Sprite');
     goog.require('lime.SpriteSheet');
     goog.require('goog.math.Coordinate');
+    goog.require('wvsz.Magic');
 
     var CONST = {
         ACTION_MOVE: "move",
@@ -45,8 +46,6 @@
             anim = new lime.animation.KeyframeAnimation(),
             self = this;
 
-        console.log("Wizard: Start moving with angle " + degAngle);
-
         // Rotate object to right direction
         this.setRotation(degAngle);
 
@@ -60,16 +59,19 @@
         }
         this.runAction(anim);
 
-         // on stop show front facing
+        // on stop show front facing
         goog.events.listen(move, lime.animation.Event.STOP,function(){
             anim.stop();
             self.changeStatus(CONST.ACTION_STAND);
-        })
+        });
+        
+        this.enemy = null;
     }
 
     wvsz.Wizard.prototype.lockTarget = function (enemy) {
         this.enemy = enemy;
         this.changeStatus(CONST.ACTION_SHOOT);
+        console.log("Lock enemy");
     }
 
     wvsz.Wizard.prototype.unlockTarget = function () {
@@ -86,14 +88,40 @@
 
             // Rotate object to right direction
             this.setRotation(degAngle);
-
-            console.log("Shoot");
-
-            this.status = CONST.ACTION_SHOOTING;
-            lime.scheduleManager.callAfter(function (dt) {
-                this.status = CONST.ACTION_SHOOT;
-            }, this, 500);
+            
+            // Unschedule old method
+            this.unScheduleShootMethods();
+            
+            // Shoot enemy
+            this.shoot();
+            
+            lime.scheduleManager.callAfter(this.startShoot, self, 1000);
         }
+    }
+    
+    wvsz.Wizard.prototype.shoot = function () {
+    	var self = this;
+    	
+        this.status = CONST.ACTION_SHOOTING;
+        this.setFill(this.spriteSheet.getFrame('wizard03.png'));
+            
+        lime.scheduleManager.callAfter(this.stopShoot, self, 500);
+        
+        // Create new magic
+        this.game.addMagic(new wvsz.Magic(this.game, this.getPosition(), this.enemy.getPosition()));
+    }
+    
+    wvsz.Wizard.prototype.startShoot = function (dt) {
+    	this.status = CONST.ACTION_SHOOT;
+    }
+    
+    wvsz.Wizard.prototype.stopShoot = function (dt) {
+    	this.setFill(this.spriteSheet.getFrame('wizard01.png'));
+    }
+    
+    wvsz.Wizard.prototype.unScheduleShootMethods = function () {
+    	lime.scheduleManager.unschedule(this.startShoot, this);
+    	lime.scheduleManager.unschedule(this.stopShoot, this);
     }
 
     wvsz.Wizard.prototype.changeStatus = function (status) {
@@ -114,22 +142,5 @@
     wvsz.Wizard.prototype.isLocking = function () {
         return this.enemy != null;
     }
-
-    wvsz.Wizard.prototype.getTop = function () {
-        return this.getPosition().y;
-    }
-
-    wvsz.Wizard.prototype.getBottom = function () {
-        return this.getPosition().y + this.getSize().height;
-    }
-
-    wvsz.Wizard.prototype.getLeft = function () {
-        return this.getPosition().x;
-    }
-
-    wvsz.Wizard.prototype.getRight = function () {
-        return this.getPosition().x + this.getSize().width;
-    }
-
     
 })();
