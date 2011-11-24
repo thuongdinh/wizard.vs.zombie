@@ -57,10 +57,13 @@
         if (this.status === CONST.ACTION_MOVE) {
             pos.x += this.v.x * dt * this.SPEED;
             pos.y += this.v.y * dt * this.SPEED;
-
-            if (pos.x === size.width || pos.x === 0) {
+            if (pos.x >= 480 || pos.x <= 0) {
                 // collision with right wall
+                //this.v.rotate(90);
                 this.v.x *= -1;
+            } else if (pos.y >= 360 || pos.y <= 0) {
+                // collision with right wall
+                this.v.y *= -1;
             }
 
             this.setPosition(pos);
