@@ -21,6 +21,8 @@
         this.zombie = null;
         this.magics = [];
         this.level = new wvsz.Level(this);
+        this.HEIGHT = 360;
+        this.WIDTH = 480;
         
         this.level.initEntities();
     }

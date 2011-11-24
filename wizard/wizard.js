@@ -100,15 +100,17 @@
     }
     
     wvsz.Wizard.prototype.shoot = function () {
-    	var self = this;
-    	
-        this.status = CONST.ACTION_SHOOTING;
-        this.setFill(this.spriteSheet.getFrame('wizard03.png'));
-            
-        lime.scheduleManager.callAfter(this.stopShoot, self, 500);
-        
-        // Create new magic
-        this.game.addMagic(new wvsz.Magic(this.game, this.getPosition(), this.enemy.getPosition()));
+        if (this.enemy && this.enemy.status !== "die") {
+            var self = this;
+
+            this.status = CONST.ACTION_SHOOTING;
+            this.setFill(this.spriteSheet.getFrame('wizard03.png'));
+
+            lime.scheduleManager.callAfter(this.stopShoot, self, 500);
+
+            // Create new magic
+            this.game.addMagic(new wvsz.Magic(this.game, this.getPosition(), this.enemy.getPosition()));
+        }
     }
     
     wvsz.Wizard.prototype.startShoot = function (dt) {

@@ -26,7 +26,7 @@
         // Add magic to game
         this.game.appendChild(this);
         this.delta = goog.math.Coordinate.difference(this.targetPos, this.getPosition());
-        this.SPEED = .15;
+        this.SPEED = .20;
             
         this.fly_();
     }

@@ -39,9 +39,11 @@
 			
 		// Background
 		game.appendChild(this.back);
-	
-		wizard.setPosition(100, 100);
-		zombie.setPosition(200, 200);
+        
+		wizard.setPosition(game.WIDTH / 2, game.HEIGHT - wizard.getSize().height);
+		zombie.setPosition(game.WIDTH/ 2, 0);
+
+        wizard.setRotation(90);
 	
 		game.addWizard(wizard);
 		game.addZombie(zombie);
