@@ -112,7 +112,10 @@
     }
     
     wvsz.Wizard.prototype.startShoot = function (dt) {
-    	this.status = CONST.ACTION_SHOOT;
+    	if (this.isLocking()) 
+    		this.status = CONST.ACTION_SHOOT;
+    	else
+    		this.status = CONST.ACTION_STAND;
     }
     
     wvsz.Wizard.prototype.stopShoot = function (dt) {
@@ -129,13 +132,16 @@
     }
 
     wvsz.Wizard.prototype.isTarget = function (enemy) {
+    	if (!enemy)
+    		return false;
+    	
         var pos = this.getPosition(),
             size = this.getSize(),
             enemyPos = enemy.getPosition(),
             enemySize = enemy.getSize(),
             centerOfWizard = new goog.math.Coordinate(pos.x + size.width, pos.y + size.height),
             centerOfEnemy = new goog.math.Coordinate(enemyPos.x + enemySize.width, enemyPos.y + enemySize.height);
-
+		
         return (this.viewDistance + enemy.getSize().width / 2) > Math.abs(goog.math.Coordinate.distance(centerOfWizard, centerOfEnemy));
     }
 

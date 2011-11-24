@@ -27,13 +27,13 @@
     goog.inherits(wvsz.Game, lime.Scene);
     
     wvsz.Game.prototype.start = function () {
-    	var self = this,
-    		wizard = self.wizard,
-    		zombie = self.zombie;
+    	var self = this;
+    	
+    	this.zombie.start();
     	
     	goog.events.listen(this,['mousedown','touchstart'],function(e){
         
-        	wizard.moteToPosition(e.position);
+        	self.wizard.moteToPosition(e.position);
 
     	});
     	
@@ -41,21 +41,15 @@
     	lime.scheduleManager.schedule(function (dt) {
 
         	// Checking collision detection
-        	if (goog.math.Box.intersects(wizard.getBoundingBox(), zombie.getBoundingBox())) {
+        	if (self.zombie && goog.math.Box.intersects(self.wizard.getBoundingBox(), self.zombie.getBoundingBox())) {
             	console.log("Wizard die!");
-        	} else if (wizard.isTarget(zombie) && !wizard.isLocking()) {
-            	wizard.lockTarget(zombie);
+        	} else if (self.wizard.isTarget(self.zombie) && !self.wizard.isLocking()) {
+            	self.wizard.lockTarget(self.zombie);
         	} else {
             	//wizard.unlockTarget(zombie);
         	}
-
-        	zombie.step(dt);
-        	wizard.step(dt);
         	
-        	// Check Magic collistion
-        	goog.array.forEachRight(this.magics, function(magic) {
-        		magic.step(dt);
-        	});
+        	self.wizard.step(dt);
 
     	}, this);
     	
@@ -76,6 +70,7 @@
     wvsz.Game.prototype.killZombie = function (zombie) {
     	this.removeChild(zombie);
     	delete this.zombie;
+    	this.wizard.unlockTarget();
     	zombie = null;
     }
     
