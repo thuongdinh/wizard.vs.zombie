@@ -18,7 +18,7 @@
         
         this.director = director;
         this.wizard = null;
-        this.zombie = null;
+        this.zombies = [];
         this.magics = [];
         this.level = new wvsz.Level(this);
         this.HEIGHT = 360;
@@ -31,8 +31,6 @@
     wvsz.Game.prototype.start = function () {
     	var self = this;
     	
-    	this.zombie.start();
-    	
     	goog.events.listen(this,['mousedown','touchstart'],function(e){
         
         	self.wizard.moteToPosition(e.position);
@@ -43,7 +41,7 @@
     	lime.scheduleManager.schedule(function (dt) {
 
         	// Checking collision detection
-        	if (self.zombie && goog.math.Box.intersects(self.wizard.getBoundingBox(), self.zombie.getBoundingBox())) {
+        	/*if (self.zombie && goog.math.Box.intersects(self.wizard.getBoundingBox(), self.zombie.getBoundingBox())) {
             	console.log("Wizard die!");
         	} else if (self.wizard.isTarget(self.zombie) && !self.wizard.isLocking()) {
             	self.wizard.lockTarget(self.zombie);
@@ -51,7 +49,7 @@
             	//wizard.unlockTarget(zombie);
         	}
         	
-        	self.wizard.step(dt);
+        	self.wizard.step(dt);*/
 
     	}, this);
     	
@@ -65,14 +63,17 @@
     }
     
     wvsz.Game.prototype.addZombie = function (zombie) {
-    	this.zombie = zombie;
+    	goog.array.insert(this.zombies, zombie);
     	this.appendChild(zombie);
     }
     
     wvsz.Game.prototype.killZombie = function (zombie) {
+    	this.wizard.unlockTarget(zombie);
+    	
     	this.removeChild(zombie);
-    	delete this.zombie;
-    	this.wizard.unlockTarget();
+    	goog.array.remove(this.zombies, zombie);
+    	
+    	// Avoid memory leak
     	zombie = null;
     }
     

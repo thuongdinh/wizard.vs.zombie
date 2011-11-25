@@ -10,6 +10,7 @@
     goog.require('lime.SpriteSheet');
     goog.require('goog.math.Coordinate');
     goog.require('wvsz.Magic');
+    goog.require('lime.parser.ZWOPTEX');
 
     var CONST = {
         ACTION_MOVE: "move",
@@ -22,7 +23,7 @@
         lime.Sprite.call(this);
 
         this.game = game;
-        this.spriteSheet = new lime.SpriteSheet('assets/wizard.png',lime.ASSETS.wizard.plist);
+        this.spriteSheet = new lime.SpriteSheet('assets/wizard.png',lime.ASSETS.wizard.plist, lime.parser.ZWOPTEX);
         this.status = CONST.ACTION_STAND;
         this.viewDistance = 120;
         this.maxDelayFrame = 120;
@@ -32,6 +33,8 @@
 
             // set current sprite
             .setFill(this.spriteSheet.getFrame('wizard01.png'));
+            
+        lime.scheduleManager.schedule(this.step, this);
     }
     goog.inherits(wvsz.Wizard, lime.Sprite);
 
@@ -54,7 +57,7 @@
 
         // Change sprite
         anim.delay = 1 / 6;
-        for(var i = 1 ; i <= 2 ;i++){
+        for (var i = 1 ; i <= 2 ;i++) {
            anim.addFrame(this.spriteSheet.getFrame('wizard' + '0' + i + '.png'));
         }
         this.runAction(anim);
@@ -70,16 +73,39 @@
 
     wvsz.Wizard.prototype.lockTarget = function (enemy) {
         this.enemy = enemy;
-        this.changeStatus(CONST.ACTION_SHOOT);
-        console.log("Lock enemy");
+        if (this.status !== CONST.ACTION_SHOOTING) {
+        	this.changeStatus(CONST.ACTION_SHOOT);
+        }
     }
 
-    wvsz.Wizard.prototype.unlockTarget = function () {
-        this.enemy = null;
-        this.changeStatus(CONST.ACTION_STAND);
+    wvsz.Wizard.prototype.unlockTarget = function (zombie) {
+    	if (zombie === this.enemy) {
+        	this.enemy = null;
+        	this.changeStatus(CONST.ACTION_STAND);
+        }
     }
 
     wvsz.Wizard.prototype.step = function (dt) {
+    
+    	// Checking collision and locking enemies
+    	var zombies = this.game.zombies,
+    		lenZombies = zombies.length,
+    		zombie = null;
+    	
+    	// Check collision with zombies
+    	if (lenZombies > 0) {
+			for (var i = lenZombies - 1; i >= 0; i--) {
+				zombie = zombies[i];
+				if (goog.math.Box.intersects(this.getBoundingBox(), zombie.getBoundingBox())) {
+					console.log("Wizard die!");
+				} else if (!this.isLocking() && this.isTarget(zombie)) {
+					this.lockTarget(zombie);
+				} else if (zombie === this.enemy && !this.isTarget(zombie)) {
+					this.unlockTarget(zombie);
+				}
+			}
+    	}
+    	
         if (this.status === CONST.ACTION_SHOOT && this.enemy) {
             var delta = goog.math.Coordinate.difference(this.enemy.getPosition(),this.getPosition()),
                 angle = Math.atan2(-delta.y,delta.x),

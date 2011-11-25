@@ -53,13 +53,21 @@
     }
     
     wvsz.Magic.prototype.step = function (dt) {
-    	var zombie = this.game.zombie;
+    	var zombies = this.game.zombies,
+    		lenZombies = zombies.length,
+    		zombie = null;
     	
-    	// Check collision with zombie
-    	if (zombie && goog.math.Box.intersects(this.getBoundingBox(), zombie.getBoundingBox())) {
-    		zombie.wasShot(this);
-            this.destroy();
-        }
+    	// Check collision with zombies
+    	if (lenZombies > 0) {
+			for (var i = lenZombies - 1; i >= 0; i--) {
+				zombie = zombies[i];
+				if (zombie && goog.math.Box.intersects(this.getBoundingBox(), zombie.getBoundingBox())) {
+					zombie.wasShot(this);
+					this.destroy();
+				}
+			}
+    	}
+    	
         
         // Magic out of box
         if (!goog.math.Box.intersects(this.game.getBoundingBox(), this.getBoundingBox())) {
